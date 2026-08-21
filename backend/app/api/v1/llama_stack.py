@@ -42,6 +42,11 @@ def _get_provider_resource_id(model):
     return str(meta.get("provider_resource_id", "unknown"))
 
 
+def _get_provider_id(model):
+    """Get provider_id from various API versions"""
+    return getattr(model, "provider_id", None) or "unknown"
+
+
 def _build_env_default_entry() -> Dict[str, Any] | None:
     """Return an env-default model entry when any runner default is configured."""
     configured = []
