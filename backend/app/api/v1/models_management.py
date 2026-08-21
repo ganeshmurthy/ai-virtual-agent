@@ -12,6 +12,12 @@ from ...api.llamastack import get_client_from_request
 from ...crud.virtual_agents import virtual_agents
 from ...database import get_db
 from ...schemas.models import ModelCreate, ModelRead, ModelUpdate
+from .llama_stack import (
+    _get_model_id,
+    _get_model_type,
+    _get_provider_id,
+    _get_provider_resource_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +46,15 @@ async def register_model(model_data: ModelCreate, request: Request):
 
         # Convert to response schema
         return ModelRead(
-            model_id=str(registered_model.identifier),
-            provider_id=registered_model.provider_id,
-            provider_model_id=registered_model.provider_resource_id,
-            model_type=registered_model.model_type,
-            metadata=registered_model.metadata,
+            model_id=_get_model_id(registered_model),
+            provider_id=_get_provider_id(registered_model),
+            provider_model_id=_get_provider_resource_id(registered_model),
+            model_type=_get_model_type(registered_model),
+            metadata=(
+                registered_model.metadata
+                if hasattr(registered_model, "metadata")
+                else {}
+            ),
         )
 
     except Exception as e:
@@ -79,8 +89,8 @@ async def list_models(request: Request):
 
         models_list = []
         for model in models:
-            provider_resource_id = str(model.provider_resource_id)
-            model_id = str(model.identifier)
+            provider_resource_id = _get_provider_resource_id(model)
+            model_id = _get_model_id(model)
 
             # Check if this model is used as a shield
             is_shield = (
@@ -90,9 +100,9 @@ async def list_models(request: Request):
 
             model_data = ModelRead(
                 model_id=model_id,
-                provider_id=model.provider_id,
+                provider_id=_get_provider_id(model),
                 provider_model_id=provider_resource_id,
-                model_type=model.model_type,
+                model_type=_get_model_type(model),
                 metadata=model.metadata if hasattr(model, "metadata") else {},
                 is_shield=is_shield,
             )
@@ -119,10 +129,10 @@ async def get_model(model_id: str, request: Request):
         model = await client.models.retrieve(model_id=model_id)
 
         return ModelRead(
-            model_id=str(model.identifier),
-            provider_id=model.provider_id,
-            provider_model_id=model.provider_resource_id,
-            model_type=model.model_type,
+            model_id=_get_model_id(model),
+            provider_id=_get_provider_id(model),
+            provider_model_id=_get_provider_resource_id(model),
+            model_type=_get_model_type(model),
             metadata=model.metadata if hasattr(model, "metadata") else {},
         )
 
@@ -153,22 +163,28 @@ async def update_model(model_id: str, model_data: ModelUpdate, request: Request)
         updated_model = await client.models.register(
             model_id=model_id,
             provider_model_id=model_data.provider_model_id
-            or existing_model.provider_resource_id,
-            provider_id=model_data.provider_id or existing_model.provider_id,
+            or _get_provider_resource_id(existing_model),
+            provider_id=model_data.provider_id or _get_provider_id(existing_model),
             metadata=(
                 model_data.metadata
                 if model_data.metadata is not None
-                else existing_model.metadata
+                else (
+                    existing_model.metadata
+                    if hasattr(existing_model, "metadata")
+                    else {}
+                )
             ),
-            model_type=existing_model.model_type,
+            model_type=_get_model_type(existing_model),
         )
 
         return ModelRead(
-            model_id=str(updated_model.identifier),
-            provider_id=updated_model.provider_id,
-            provider_model_id=updated_model.provider_resource_id,
-            model_type=updated_model.model_type,
-            metadata=updated_model.metadata,
+            model_id=_get_model_id(updated_model),
+            provider_id=_get_provider_id(updated_model),
+            provider_model_id=_get_provider_resource_id(updated_model),
+            model_type=_get_model_type(updated_model),
+            metadata=(
+                updated_model.metadata if hasattr(updated_model, "metadata") else {}
+            ),
         )
 
     except Exception as e:
