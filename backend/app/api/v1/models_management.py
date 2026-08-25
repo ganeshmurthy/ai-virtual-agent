@@ -9,15 +9,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...api.llamastack import get_client_from_request
+from ...crud.virtual_agents import virtual_agents
+from ...database import get_db
+from ...schemas.models import ModelCreate, ModelRead, ModelUpdate
 from .llama_stack import (
     _get_model_id,
     _get_model_type,
     _get_provider_id,
     _get_provider_resource_id,
 )
-from ...crud.virtual_agents import virtual_agents
-from ...database import get_db
-from ...schemas.models import ModelCreate, ModelRead, ModelUpdate
 
 logger = logging.getLogger(__name__)
 
