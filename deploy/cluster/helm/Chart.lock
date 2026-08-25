@@ -13,12 +13,12 @@ dependencies:
   version: 0.8.6
 - name: configure-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.5.6
+  version: 0.5.10
 - name: ingestion-pipeline
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
-  version: 0.6.5
+  version: 0.7.9
 - name: oracle-db
   repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
   version: 0.5.5
-digest: sha256:929fc3fa16d5b7fb37ba194edb29bbdda3e8fd98e6f9eda37c36ffd6653ae901
-generated: "2026-06-22T15:15:22.002701642-04:00"
+digest: sha256:d2f403adaa84d9d53d494c7b330d015fe13f8c0132ffd07d99fe42cddbd697b8
+generated: "2026-08-25T10:54:11.028647485-04:00"
