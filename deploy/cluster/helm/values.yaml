@@ -248,7 +248,7 @@ mcp-servers:
       deploymentMode: deployment
       image:
         repository: quay.io/rh-ai-quickstart/mcp-travel-research
-        tag: "latest-main"
+        tag: "latest"
       transport: streamable-http
       port: 8000
       targetPort: 8000
@@ -257,7 +257,7 @@ mcp-servers:
       deploymentMode: deployment
       image:
         repository: quay.io/rh-ai-quickstart/mcp-hotel
-        tag: "latest-main"
+        tag: "latest"
       transport: streamable-http
       port: 8000
       targetPort: 8000
@@ -266,7 +266,7 @@ mcp-servers:
       deploymentMode: deployment
       image:
         repository: quay.io/rh-ai-quickstart/mcp-flight
-        tag: "latest-main"
+        tag: "latest"
       transport: streamable-http
       port: 8000
       targetPort: 8000
