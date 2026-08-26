@@ -7,8 +7,16 @@ from typing import Any, Dict, Iterable
 import requests
 from mcp.server.fastmcp import FastMCP
 
+try:
+    from importlib.metadata import version
+
+    mcp_version = version("mcp")
+except Exception:
+    mcp_version = "unknown"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("flight_mcp")
+logger.info("Starting flight_mcp with mcp version: %s", mcp_version)
 
 mcp = FastMCP(
     "flight_mcp",
