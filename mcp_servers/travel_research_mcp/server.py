@@ -4,8 +4,16 @@ import os
 import requests
 from mcp.server.fastmcp import FastMCP
 
+try:
+    from importlib.metadata import version
+
+    mcp_version = version("mcp")
+except Exception:
+    mcp_version = "unknown"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("travel_research_mcp")
+logger.info("Starting travel_research_mcp with mcp version: %s", mcp_version)
 
 mcp = FastMCP(
     "travel_research_mcp",

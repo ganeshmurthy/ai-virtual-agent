@@ -5,8 +5,16 @@ from typing import Any, Dict
 import requests
 from mcp.server.fastmcp import FastMCP
 
+try:
+    from importlib.metadata import version
+
+    mcp_version = version("mcp")
+except Exception:
+    mcp_version = "unknown"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("hotel_mcp")
+logger.info("Starting hotel_mcp with mcp version: %s", mcp_version)
 
 mcp = FastMCP(
     "hotel_mcp",
