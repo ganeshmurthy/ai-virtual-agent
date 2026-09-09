@@ -1,0 +1,55 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "semantic-router.fullname" . }}-envoy
+  labels:
+    {{- include "semantic-router.envoy.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.envoy.replicas }}
+  selector:
+    matchLabels:
+      {{- include "semantic-router.envoy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "semantic-router.envoy.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          ports:
+            - name: proxy
+              containerPort: 8801
+              protocol: TCP
+            - name: admin
+              containerPort: 9901
+              protocol: TCP
+          command:
+            - envoy
+            - -c
+            - /config/envoy.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            {{- toYaml .Values.envoy.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: admin
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: admin
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "semantic-router.fullname" . }}-envoy
+{{- end }}

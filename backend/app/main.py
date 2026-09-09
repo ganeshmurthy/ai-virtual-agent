@@ -22,6 +22,13 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up...")
 
+    # Register semantic router model in LlamaStack if enabled
+    from .core.semantic_router import register_semantic_router_model
+
+    model_id = await register_semantic_router_model()
+    if model_id:
+        logger.info(f"Semantic router model registered: {model_id}")
+
     yield
 
     # Shutdown

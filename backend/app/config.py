@@ -26,6 +26,14 @@ class Settings:
     # LlamaStack Configuration
     LLAMA_STACK_URL: Optional[str] = os.getenv("LLAMA_STACK_URL")
 
+    # Semantic Router Configuration
+    SEMANTIC_ROUTER_ENABLED: bool = (
+        os.getenv("SEMANTIC_ROUTER_ENABLED", "false").lower() == "true"
+    )
+    SEMANTIC_ROUTER_ENDPOINT: str = os.getenv(
+        "SEMANTIC_ROUTER_ENDPOINT", "http://semantic-router-envoy:8801/v1"
+    )
+
     # Default inference model for local dev (e.g. Ollama model name).
     # When set and LOCAL_DEV_ENV_MODE is true, template-initialized agents use
     # this model instead of the template's production model name.

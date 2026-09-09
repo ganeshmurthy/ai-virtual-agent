@@ -40,5 +40,7 @@ venv
 backend/public/index.html
 backend/public/assets
 
-charts
+# Helm chart archives (tarballs), but allow chart source code
+*.tgz
+/charts/*.tgz
 frontend/dist

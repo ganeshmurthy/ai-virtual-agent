@@ -46,3 +46,6 @@ dependencies:
     version: 0.5.5
     repository: https://rh-ai-quickstart.github.io/ai-architecture-charts
     condition: oracle-db.enabled
+  - name: semantic-router
+    version: 0.1.0
+    condition: semantic-router.enabled

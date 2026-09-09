@@ -110,13 +110,56 @@ install-namespace: ## Create and configure deployment namespace
 install: install-namespace deps ## Install the AI Virtual Agent deployment
 	@./scripts/install_with_env.sh $(NAMESPACE) $(AI_VIRTUAL_AGENT_RELEASE) $(AI_VIRTUAL_AGENT_CHART)
 
-	@echo "Waiting for model services and llamastack to deploy. It may take around 10-15 minutes depending on the size of the model..."
-	@oc rollout status deploy/ai-virtual-agent -n $(NAMESPACE)
-	@if [ "$(ORACLE)" = "true" ]; then \
-		echo "Oracle enabled - waiting for TPC-DS data population to complete. This may take some time..."; \
-		oc wait --for=condition=complete --timeout=3600s job/oracle-db-tpcds-populate -n $(NAMESPACE); \
+	@echo ""
+	@echo "📦 Deployment Progress Tracker"
+	@echo "=============================="
+	@echo ""
+	@echo "⏳ Waiting for services to deploy (10-15 minutes for models)..."
+	@echo ""
+
+	@echo "🔍 Checking Semantic Router components..."
+	@if oc get deployment -n $(NAMESPACE) -l app.kubernetes.io/name=semantic-router &>/dev/null; then \
+		echo "  ├─ Semantic Router Envoy..."; \
+		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=envoy,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ Envoy ready" || echo "    ⏳ Envoy deploying..."; \
+		echo "  ├─ Semantic Router ExtProc..."; \
+		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=extproc,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ ExtProc ready" || echo "    ⏳ ExtProc deploying..."; \
+		if oc get deployment -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router &>/dev/null; then \
+			echo "  └─ Semantic Router Dashboard..."; \
+			oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ Dashboard ready" || echo "    ⏳ Dashboard deploying..."; \
+		fi; \
+	else \
+		echo "  ⊗ Semantic Router disabled"; \
 	fi
-	@echo "$(AI_VIRTUAL_AGENT_RELEASE) installed successfully"
+	@echo ""
+
+	@echo "🤖 Checking Model Deployments..."
+	@if oc get deployment llm-fast -n $(NAMESPACE) &>/dev/null; then \
+		echo "  ├─ llm-fast (Llama-3.2-3B)..."; \
+		oc wait --for=condition=available --timeout=600s deployment/llm-fast -n $(NAMESPACE) 2>/dev/null && echo "    ✅ Fast model ready" || echo "    ⏳ Fast model loading..."; \
+	fi
+	@if oc get deployment llm-smart -n $(NAMESPACE) &>/dev/null; then \
+		echo "  └─ llm-smart (Llama-3.1-8B)..."; \
+		oc wait --for=condition=available --timeout=900s deployment/llm-smart -n $(NAMESPACE) 2>/dev/null && echo "    ✅ Smart model ready" || echo "    ⏳ Smart model loading..."; \
+	fi
+	@echo ""
+
+	@echo "🦙 Checking LlamaStack..."
+	@oc wait --for=condition=available --timeout=300s deployment/llamastack -n $(NAMESPACE) 2>/dev/null && echo "  ✅ LlamaStack ready" || echo "  ⏳ LlamaStack deploying..."
+	@echo ""
+
+	@echo "🌐 Checking Main Application..."
+	@oc rollout status deploy/ai-virtual-agent -n $(NAMESPACE)
+	@echo "  ✅ AI Virtual Agent ready"
+	@echo ""
+
+	@if [ "$(ORACLE)" = "true" ]; then \
+		echo "🗄️  Oracle DB - waiting for TPC-DS data population..."; \
+		oc wait --for=condition=complete --timeout=3600s job/oracle-db-tpcds-populate -n $(NAMESPACE); \
+		echo "  ✅ Oracle DB ready"; \
+		echo ""; \
+	fi
+
+	@echo "✅ $(AI_VIRTUAL_AGENT_RELEASE) installed successfully"
 	@echo ""
 	@echo "Getting application URL..."
 	@APP_URL=$$(oc get route ai-virtual-agent-authenticated -n $(NAMESPACE) -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || echo ""); \
@@ -128,6 +171,13 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 		echo "   oc get route ai-virtual-agent-authenticated -n $(NAMESPACE)"; \
 	fi
 	@echo ""
+	@if oc get route -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router &>/dev/null; then \
+		DASHBOARD_URL=$$(oc get route -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router -o jsonpath='{.items[0].status.ingress[0].host}' 2>/dev/null); \
+		if [ -n "$$DASHBOARD_URL" ]; then \
+			echo "🎛️  Semantic Router Dashboard: https://$$DASHBOARD_URL"; \
+			echo ""; \
+		fi; \
+	fi
 
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"

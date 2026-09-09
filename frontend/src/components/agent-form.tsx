@@ -474,6 +474,21 @@ export function AgentForm({
                 {field.state.meta.errors.join(', ')}
               </FormHelperText>
             )}
+            <FormHelperText>
+              {field.state.value === 'semantic-router' ? (
+                <span>
+                  <strong>Semantic Router:</strong> Intelligent routing between fast (2B/3B) and smart (8B) models.
+                  Automatically selects the optimal model based on query complexity. Optimized for Intel Xeon CPUs.
+                  Recommended for most use cases.
+                </span>
+              ) : field.state.value ? (
+                <span>
+                  Direct model selection. All queries will use <strong>{field.state.value}</strong> regardless of complexity.
+                </span>
+              ) : (
+                <span>Select a model to power this agent.</span>
+              )}
+            </FormHelperText>
           </FormGroup>
         )}
       </form.Field>

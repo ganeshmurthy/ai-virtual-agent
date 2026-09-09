@@ -21,6 +21,7 @@ This platform provides the tools to build and deploy conversational AI agents th
 - 💬 **Real-time Chat** - Streaming conversations with session history
 - 🔧 **Tool Ecosystem** - Built-in tools plus extensible MCP server support
 - 🛡️ **Safety Controls** - Configurable guardrails and content filtering
+- 🧠 **Semantic Router** - Intelligent model routing for CPU-optimized performance (optional)
 
 
 ### Architecture Overview
@@ -209,6 +210,7 @@ Integrate AI agents with an Oracle data warehouse using the Model Context Protoc
 - **[Installation Guide](INSTALLING.md)** - Production deployment on Kubernetes
 - **[Agent Templates](docs/agent-templates-ingestion.md)** - Pre-built agent configurations
 - **[Knowledge Base Setup](docs/knowledge-base-architecture.md)** - Document processing pipeline
+- **[Semantic Router Guide](docs/semantic-router.md)** - CPU-optimized intelligent model routing
 
 #### 🔧 **For Integration**
 - **[Testing Guide](tests/README.md)** - Running integration tests

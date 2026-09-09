@@ -1,6 +1,10 @@
 name: "Travel & Hospitality"
 description: "Specialized agents for travel and hospitality services including travel planning, hotel concierge, and tour guidance."
 category: "travel"
+# NOTE: When semantic routing is enabled (semantic-router.enabled=true in Helm values),
+# you can set model_name: "semantic-router" to use intelligent routing between
+# fast (2B/3B) and smart (8B) models based on query complexity.
+# This provides optimal performance on Intel Xeon CPUs without GPUs.
 templates:
   travel_agent:
     name: "Travel Agent Specialist"
