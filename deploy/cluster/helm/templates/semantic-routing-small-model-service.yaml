@@ -1,0 +1,19 @@
+{{- if .Values.semanticRouting.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-small-model
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-routing-small-model
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 11434
+    protocol: TCP
+  selector:
+    {{- include "ai-virtual-agent.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-routing-small-model
+{{- end }}

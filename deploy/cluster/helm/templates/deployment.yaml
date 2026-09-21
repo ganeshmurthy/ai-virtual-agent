@@ -182,11 +182,11 @@ spec:
                   name: {{ include "ai-virtual-agent.fullname" $ }}-env
                   key: SERPAPI_API_KEY
             {{- end }}
-            {{- if (index .Values "semantic-router").enabled }}
+            {{- if .Values.semanticRouting.enabled }}
             - name: SEMANTIC_ROUTER_ENABLED
               value: "true"
             - name: SEMANTIC_ROUTER_ENDPOINT
-              value: "http://{{ .Release.Name }}-semantic-router-envoy:8801/v1"
+              value: "http://{{ include "ai-virtual-agent.fullname" . }}-praxis:8080/v1"
             {{- end }}
           ports:
             - name: http

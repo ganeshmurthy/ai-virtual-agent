@@ -65,12 +65,12 @@ async def register_semantic_router_model() -> Optional[str]:
 
         client.models.register(
             model_id=model_id,
-            provider_id="vllm",
+            provider_id="semantic-router",
             provider_model_id=model_id,
             metadata={
-                "description": "Intelligent routing between fast (2B/3B) and smart (8B) models",
+                "description": "Intelligent routing between small (1.5B) and large (35B) models",
                 "routing_enabled": True,
-                "backend": "envoy+extproc",
+                "backend": "praxis+llm-d-sc",
             },
         )
 

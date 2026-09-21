@@ -1,0 +1,68 @@
+{{- if .Values.semanticRouting.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-small-model
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-routing-small-model
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ai-virtual-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: semantic-routing-small-model
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: semantic-routing-small-model
+    spec:
+      containers:
+      - name: ollama
+        image: "{{ .Values.semanticRouting.smallModel.image.repository }}:{{ .Values.semanticRouting.smallModel.image.tag }}"
+        imagePullPolicy: {{ .Values.semanticRouting.smallModel.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 11434
+          protocol: TCP
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0:11434"
+        - name: OLLAMA_MODELS
+          value: "/models"
+        - name: HOME
+          value: "/models"
+        volumeMounts:
+        - name: models
+          mountPath: /models
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          ollama serve &
+          OLLAMA_PID=$!
+          sleep 10
+          ollama pull {{ .Values.semanticRouting.smallModel.modelId }}
+          wait $OLLAMA_PID
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 90
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.semanticRouting.smallModel.resources | nindent 10 }}
+      volumes:
+      - name: models
+        emptyDir: {}
+{{- end }}

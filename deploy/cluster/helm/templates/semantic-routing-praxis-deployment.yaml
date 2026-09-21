@@ -1,0 +1,62 @@
+{{- if .Values.semanticRouting.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-praxis
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-routing-praxis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ai-virtual-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: semantic-routing-praxis
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: semantic-routing-praxis
+    spec:
+      containers:
+      - name: praxis
+        image: "{{ .Values.semanticRouting.praxis.image.repository }}:{{ .Values.semanticRouting.praxis.image.tag }}"
+        imagePullPolicy: {{ .Values.semanticRouting.praxis.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: admin
+          containerPort: 9901
+          protocol: TCP
+        env:
+        - name: RUST_LOG
+          value: "debug"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/praxis
+          readOnly: true
+        # No args - ENTRYPOINT in image already has: ["/usr/local/bin/praxis", "-c", "/etc/praxis/config.yaml"]
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: admin
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: admin
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.semanticRouting.praxis.resources | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "ai-virtual-agent.fullname" . }}-praxis-config
+{{- end }}

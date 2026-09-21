@@ -74,6 +74,19 @@ build_helm_cmd() {
         cmd_args+=("--set-json" "llama-stack.secrets=$LLAMA_STACK_ENV")
     fi
 
+    # Semantic Routing args (Praxis + llm-d-sc)
+    if [ -n "$SEMANTIC_ROUTING_LARGE_MODEL_NAME" ] && [ -n "$SEMANTIC_ROUTING_LARGE_MODEL_URL" ]; then
+        cmd_args+=("--set" "semanticRouting.enabled=true")
+        cmd_args+=("--set" "semanticRouting.largeModel.name=$SEMANTIC_ROUTING_LARGE_MODEL_NAME")
+        cmd_args+=("--set" "semanticRouting.largeModel.url=$SEMANTIC_ROUTING_LARGE_MODEL_URL")
+        if [ -n "$SEMANTIC_ROUTING_LARGE_MODEL_API_KEY" ]; then
+            cmd_args+=("--set" "semanticRouting.largeModel.apiKey=$SEMANTIC_ROUTING_LARGE_MODEL_API_KEY")
+        fi
+        cmd_args+=("--set" "llama-stack.models.semantic-router.enabled=true")
+        cmd_args+=("--set" "llama-stack.models.semantic-router.url=http://$AI_VIRTUAL_AGENT_RELEASE-praxis:8080/v1")
+        echo "  ✓ Semantic Routing enabled with large model: $SEMANTIC_ROUTING_LARGE_MODEL_NAME"
+    fi
+
     # ingestion args
     cmd_args+=("--set" "configure-pipeline.notebook.create=false")
     cmd_args+=("--set" "ingestion-pipeline.defaultPipeline.enabled=false")

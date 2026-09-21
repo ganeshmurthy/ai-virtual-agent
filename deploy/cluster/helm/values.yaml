@@ -238,6 +238,14 @@ llama-stack:
       description: users can read, update and delete resources they own
   secrets:
     TAVILY_SEARCH_API_KEY: ""
+  # Model configuration - semantic-router must be enabled when semanticRouting.enabled is true
+  # The Makefile will set these values automatically during installation
+  models:
+    semantic-router:
+      enabled: false
+      id: semantic-router
+      # URL points to Praxis service (set by Makefile when semanticRouting.enabled=true)
+      url: "http://ai-virtual-agent-praxis:8080/v1"
 
 # Vacation-planner MCP servers deployed via the mcp-servers subchart.
 # Images must be pre-built and pushed to the repository below.
@@ -271,66 +279,72 @@ mcp-servers:
       port: 8000
       targetPort: 8000
 
-# Semantic Router - Intelligent CPU-optimized model routing
-# Routes between fast (3B) and smart (8B) models based on query complexity
-semantic-router:
-  enabled: true
-  hfToken: ""  # HuggingFace token required for downloading mmBERT models
+# Semantic Routing with Praxis + llm-d-sc
+# Intelligent routing between small (1B) and large models based on query complexity
+# Uses route-gate v0.2 binary classifier with 93.35% accuracy
+semanticRouting:
+  enabled: false
 
-# LLM Service - CPU-Optimized vLLM Instances for Semantic Router
-# These two models are used by the semantic router for intelligent routing
-llm-service:
-  device: cpu  # Default to CPU for all models
-  models:
-    # Fast model (3B) - for simple queries, chitchat, FAQs
-    llm-fast:
-      id: meta-llama/Llama-3.2-3B-Instruct
-      enabled: true
-      device: cpu
-      resources:
-        requests:
-          cpu: "8"
-          memory: "16Gi"
-        limits:
-          cpu: "8"
-          memory: "16Gi"
-      args:
-        - --max-model-len
-        - "16384"
-        - --max-num-seqs
-        - "32"
-        - --dtype
-        - "bfloat16"
-        - --enable-auto-tool-choice
-        - --chat-template
-        - /chat-templates/tool_chat_template_llama3.2_json.jinja
-        - --tool-call-parser
-        - llama3_json
+  # Praxis proxy with llm-d-sc filter
+  praxis:
+    image:
+      repository: quay.io/ganeshmurthy/praxis-with-llm-d-sc
+      tag: v0.5.4
+      pullPolicy: Always
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
 
-    # Smart model (8B) - for complex RAG, document analysis, reasoning
-    llm-smart:
-      id: meta-llama/Llama-3.1-8B-Instruct
-      enabled: true
-      device: cpu
-      resources:
-        requests:
-          cpu: "15"
-          memory: "32Gi"
-        limits:
-          cpu: "15"
-          memory: "32Gi"
-      args:
-        - --max-model-len
-        - "32768"
-        - --max-num-seqs
-        - "32"
-        - --dtype
-        - "bfloat16"
-        - --enable-auto-tool-choice
-        - --chat-template
-        - /chat-templates/tool_chat_template_llama3.2_json.jinja
-        - --tool-call-parser
-        - llama3_json
+  # llm-d-sc semantic classifier service
+  classifier:
+    image:
+      repository: quay.io/ganeshmurthy/llm-d-sc
+      tag: v0.2.0
+      pullPolicy: IfNotPresent
+    modelCar:
+      repository: quay.io/ganeshmurthy/llm-d-sc-modelcar
+      tag: route-gate-v0.2.7
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+
+  # Small model (auto-deployed locally)
+  smallModel:
+    name: qwen-2.5-1.5b
+    modelId: qwen2.5:1.5b
+    image:
+      repository: ollama/ollama
+      tag: latest
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "2"
+        memory: "4Gi"
+      limits:
+        cpu: "4"
+        memory: "8Gi"
+    args:
+      - --max-model-len
+      - "8192"
+      - --max-num-seqs
+      - "16"
+      - --dtype
+      - "bfloat16"
+
+  # Large model (user-provided URL and API key)
+  largeModel:
+    name: "Qwen3.6-35B-A3B"  # Model name expected by the large model endpoint
+    url: ""         # User provides via Makefile prompt
+    apiKey: ""      # User provides via Makefile prompt (optional)
 
 # global:
 #   models:

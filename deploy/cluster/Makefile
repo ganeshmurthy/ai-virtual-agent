@@ -89,9 +89,20 @@ install-help: ## Show detailed deployment help and configuration options
 	@echo "  LANGGRAPH_LLM_API_BASE   - Override LangGraph LLM base URL"
 	@echo "  CREWAI_LLM_API_BASE      - Override CrewAI LLM base URL"
 	@echo ""
+	@echo "Semantic Routing Configuration (Praxis + llm-d-sc):"
+	@echo "  SEMANTIC_ROUTING_LARGE_MODEL_NAME     - Large model name (required for semantic routing)"
+	@echo "  SEMANTIC_ROUTING_LARGE_MODEL_URL      - Large model URL (required for semantic routing)"
+	@echo "  SEMANTIC_ROUTING_LARGE_MODEL_API_KEY  - Large model API key (optional)"
+	@echo ""
 	@echo "Example usage:"
 	@echo "  make install NAMESPACE=my-ai-assistant"
 	@echo "  make install-status NAMESPACE=my-ai-assistant"
+	@echo ""
+	@echo "  # With semantic routing:"
+	@echo "  make install NAMESPACE=my-ai-assistant \\"
+	@echo "    SEMANTIC_ROUTING_LARGE_MODEL_NAME=Qwen3.6-35B-A3B \\"
+	@echo "    SEMANTIC_ROUTING_LARGE_MODEL_URL=https://litemaas.rhoai.rh-aiservices-bu.com/v1 \\"
+	@echo "    SEMANTIC_ROUTING_LARGE_MODEL_API_KEY=sk-xxx"
 
 deps: ## Update Helm dependencies
 	@echo "Updating Helm dependencies"
@@ -117,31 +128,19 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 	@echo "⏳ Waiting for services to deploy (10-15 minutes for models)..."
 	@echo ""
 
-	@echo "🔍 Checking Semantic Router components..."
-	@if oc get deployment -n $(NAMESPACE) -l app.kubernetes.io/name=semantic-router &>/dev/null; then \
-		echo "  ├─ Semantic Router Envoy..."; \
-		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=envoy,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ Envoy ready" || echo "    ⏳ Envoy deploying..."; \
-		echo "  ├─ Semantic Router ExtProc..."; \
-		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=extproc,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ ExtProc ready" || echo "    ⏳ ExtProc deploying..."; \
-		if oc get deployment -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router &>/dev/null; then \
-			echo "  └─ Semantic Router Dashboard..."; \
-			oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router 2>/dev/null && echo "    ✅ Dashboard ready" || echo "    ⏳ Dashboard deploying..."; \
-		fi; \
+	@echo "🔍 Checking Semantic Routing (Praxis + llm-d-sc) components..."
+	@if oc get deployment -n $(NAMESPACE) -l app.kubernetes.io/component=semantic-routing-praxis &>/dev/null; then \
+		echo "  ├─ Praxis Proxy..."; \
+		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=semantic-routing-praxis 2>/dev/null && echo "    ✅ Praxis ready" || echo "    ⏳ Praxis deploying..."; \
+		echo "  ├─ llm-d-sc Classifier..."; \
+		oc wait --for=condition=available --timeout=300s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=semantic-routing-classifier 2>/dev/null && echo "    ✅ Classifier ready" || echo "    ⏳ Classifier deploying..."; \
+		echo "  └─ Ollama Small Model (Qwen 2.5 1.5B)..."; \
+		oc wait --for=condition=available --timeout=600s deployment -n $(NAMESPACE) -l app.kubernetes.io/component=semantic-routing-small-model 2>/dev/null && echo "    ✅ Small model ready" || echo "    ⏳ Small model loading..."; \
 	else \
-		echo "  ⊗ Semantic Router disabled"; \
+		echo "  ⊗ Semantic Routing disabled"; \
 	fi
 	@echo ""
 
-	@echo "🤖 Checking Model Deployments..."
-	@if oc get deployment llm-fast -n $(NAMESPACE) &>/dev/null; then \
-		echo "  ├─ llm-fast (Llama-3.2-3B)..."; \
-		oc wait --for=condition=available --timeout=600s deployment/llm-fast -n $(NAMESPACE) 2>/dev/null && echo "    ✅ Fast model ready" || echo "    ⏳ Fast model loading..."; \
-	fi
-	@if oc get deployment llm-smart -n $(NAMESPACE) &>/dev/null; then \
-		echo "  └─ llm-smart (Llama-3.1-8B)..."; \
-		oc wait --for=condition=available --timeout=900s deployment/llm-smart -n $(NAMESPACE) 2>/dev/null && echo "    ✅ Smart model ready" || echo "    ⏳ Smart model loading..."; \
-	fi
-	@echo ""
 
 	@echo "🦙 Checking LlamaStack..."
 	@oc wait --for=condition=available --timeout=300s deployment/llamastack -n $(NAMESPACE) 2>/dev/null && echo "  ✅ LlamaStack ready" || echo "  ⏳ LlamaStack deploying..."
@@ -171,13 +170,6 @@ install: install-namespace deps ## Install the AI Virtual Agent deployment
 		echo "   oc get route ai-virtual-agent-authenticated -n $(NAMESPACE)"; \
 	fi
 	@echo ""
-	@if oc get route -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router &>/dev/null; then \
-		DASHBOARD_URL=$$(oc get route -n $(NAMESPACE) -l app.kubernetes.io/component=dashboard,app.kubernetes.io/name=semantic-router -o jsonpath='{.items[0].status.ingress[0].host}' 2>/dev/null); \
-		if [ -n "$$DASHBOARD_URL" ]; then \
-			echo "🎛️  Semantic Router Dashboard: https://$$DASHBOARD_URL"; \
-			echo ""; \
-		fi; \
-	fi
 
 uninstall: ## Uninstall deployment and clean up resources
 	@echo "Uninstalling $(AI_VIRTUAL_AGENT_RELEASE) helm chart from namespace $(NAMESPACE)"

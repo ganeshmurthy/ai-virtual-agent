@@ -1,0 +1,65 @@
+{{- if .Values.semanticRouting.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-virtual-agent.fullname" . }}-llm-d-sc
+  labels:
+    {{- include "ai-virtual-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-routing-classifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ai-virtual-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: semantic-routing-classifier
+  template:
+    metadata:
+      labels:
+        {{- include "ai-virtual-agent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: semantic-routing-classifier
+    spec:
+      containers:
+      - name: llm-d-sc
+        image: "{{ .Values.semanticRouting.classifier.image.repository }}:{{ .Values.semanticRouting.classifier.image.tag }}"
+        imagePullPolicy: {{ .Values.semanticRouting.classifier.image.pullPolicy }}
+        ports:
+        - name: grpc
+          containerPort: 50051
+          protocol: TCP
+        env:
+        - name: MODEL_PATH
+          value: "/models"
+        - name: RUST_LOG
+          value: "debug"
+        - name: LLM_D_SC_CLASSIFIER
+          value: "/models/route.json"
+        volumeMounts:
+        - name: modelcar-root
+          mountPath: /models
+          subPath: models
+          readOnly: true
+        livenessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.semanticRouting.classifier.resources | nindent 10 }}
+      volumes:
+      # Mount ModelCar OCI image directly as read-only volume
+      # (Requires Kubernetes 1.31+ / OpenShift 4.16+)
+      # Image has files at /models/*, we mount root and use subPath to access /models
+      - name: modelcar-root
+        image:
+          reference: {{ .Values.semanticRouting.classifier.modelCar.repository }}:{{ .Values.semanticRouting.classifier.modelCar.tag }}
+          pullPolicy: {{ .Values.semanticRouting.classifier.modelCar.pullPolicy }}
+{{- end }}
