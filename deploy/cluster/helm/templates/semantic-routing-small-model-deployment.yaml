@@ -43,6 +43,7 @@ spec:
           OLLAMA_PID=$!
           sleep 10
           ollama pull {{ .Values.semanticRouting.smallModel.modelId }}
+          ollama cp {{ .Values.semanticRouting.smallModel.modelId }} semantic-router
           wait $OLLAMA_PID
         livenessProbe:
           httpGet:

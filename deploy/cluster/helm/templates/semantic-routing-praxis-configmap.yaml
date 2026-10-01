@@ -42,15 +42,6 @@ data:
             on_resource_exhausted: default_cluster
             status_on_reject: 503
             emit_headers: true
-          - filter: json_body_rewrite
-            max_body_bytes: 1048576
-            rules:
-              - when: "header('x-llm-d-sc-label') == 'SMALL'"
-                set:
-                  model: "{{ .Values.semanticRouting.smallModel.modelId }}"
-              - when: "header('x-llm-d-sc-label') == 'LARGE'"
-                set:
-                  model: "{{ .Values.semanticRouting.largeModel.name }}"
           {{- if .Values.semanticRouting.largeModel.apiKey }}
           - filter: headers
             request_add:
